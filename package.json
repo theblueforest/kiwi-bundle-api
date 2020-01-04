@@ -1,0 +1,26 @@
+{
+  "name": "kiwi-bundle-api",
+  "version": "1.0.0",
+  "author": "Nazim Lachter <nazim@blueforest.cc>",
+  "repository": "git@github.com:theblueforest/kiwi-bundle-api.git",
+  "license": "Apache-2.0",
+  "main": "./lib/core/index.js",
+  "scripts": {
+    "start": "kiwi start",
+    "test": "kiwi test",
+    "build": "kiwi build",
+    "deploy": "kiwi deploy",
+    "undeploy": "kiwi undeploy"
+  },
+  "bundles": {
+    "kiwi-bundle": {
+      "handlers": {
+        "start": "./handlers/start.main",
+        "build": "./handlers/build.main"
+      }
+    }
+  },
+  "devDependencies": {
+    "kiwi-bundle": "3.0.7"
+  }
+}
