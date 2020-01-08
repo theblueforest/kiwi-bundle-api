@@ -1,16 +1,11 @@
 import { KiwiBundleOptions } from "./options"
 
-export type KiwiBundleHandlerParamsHandlers = {
-  [path: string]: {
-    path: string
-    params: string[]
-  }
-}
-
 interface KiwiBundleHandlerParams {
+  path: string
+  rootDir: string
   version: string
   options: KiwiBundleOptions
-  handlers: KiwiBundleHandlerParamsHandlers
+  handlers: { [path: string]: string }
 }
 
 export type KiwiBundleStartHandler = (params: KiwiBundleHandlerParams) => void
