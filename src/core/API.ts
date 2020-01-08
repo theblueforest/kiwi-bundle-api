@@ -1,5 +1,4 @@
 import http from "http"
-import { join } from "path"
 
 export type APIHandlers = {
   [path: string]: {
@@ -9,17 +8,10 @@ export type APIHandlers = {
 }
 
 export class API {
-  handlers: APIHandlers
+  private handlers: APIHandlers = {}
 
-  constructor(handlers: { [path: string]: string }, hostname = "0.0.0.0", port = 8080) {
-    this.handlers = this.convertHandlers(handlers)
-    http.createServer(this.requestListener.bind(this)).listen(port, hostname, () => {
-      console.log(`Server now available on http://${hostname}:${port}\n`)
-    })
-  }
-
-  private convertHandlers(handlers: { [path: string]: string }): APIHandlers {
-    return Object.keys(handlers).reduce((result, handlerPath) => {
+  setHandlers(handlers: { [path: string]: string }) {
+    this.handlers = Object.keys(handlers).reduce((result, handlerPath) => {
       let regexPath = handlerPath.replace(/\{.*?\}/g, "([A-Za-z0-9]+)")
       if(regexPath.charAt(regexPath.length - 1) === "/") regexPath += "?"
       result["^" + regexPath + "$"] = {
@@ -31,14 +23,6 @@ export class API {
   }
 
   private requestListener(request: http.IncomingMessage, response: http.ServerResponse) {
-    /*let handler = null
-    let lastIndex = 0
-    const paths = Object.keys(this.handlers)
-    for(; lastIndex < paths.length; lastIndex++) {
-      handler = new RegExp(paths[lastIndex]).exec(request.url as string)
-      if(handler !== null) break
-    }*/
-
     let output = null
 
     const paths = Object.keys(this.handlers)
@@ -65,6 +49,16 @@ export class API {
       response.write(JSON.stringify(output))
     }
     response.end()
+  }
+
+  start(port = 8080, hostname = "0.0.0.0", callback?: () => void) {
+    http.createServer(this.requestListener.bind(this)).listen(port, hostname, () => {
+      if(typeof callback === "undefined") {
+        console.log(`Server available on http://${hostname}:${port}\n`)
+      } else {
+        callback()
+      }
+    })
   }
 
 }

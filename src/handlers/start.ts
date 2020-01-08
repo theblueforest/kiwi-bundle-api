@@ -1,65 +1,31 @@
-import { KiwiBundleStartHandler } from "./.bundles/kiwi-bundle/handlers"
-import Webpack from "webpack"
 import { join } from "path"
+import { KiwiBundleStartHandler } from "./.bundles/kiwi-bundle/handlers"
+import { WebpackCompiler } from "../core/WebpackCompiler"
+import { API } from "../core/API"
 
-let CURRENT_API: any = null
+export const main: KiwiBundleStartHandler = ({ path, rootDir, handlers, outDir, options }) => {
+  let isWebpackStarted = false
+  let isServerStarted = false
 
-export const main: KiwiBundleStartHandler = ({ path, rootDir, handlers, options, version }) => {
-  if(CURRENT_API === null) {
-    Webpack({
-      mode: "production",
-      entry: Object.values(handlers).reduce((result, handler) => {
-        result[handler] = join(path, rootDir, handler + ".ts")
-        return result
-      }, {} as any),
-      module: {
-        rules: [
-          { test: /\.tsx?$/, use: "ts-loader", exclude: /node_modules/ },
-        ],
-      },
-      resolve: {
-        extensions: [ ".ts" ],
-      },
-      target: "node",
-      output: {
-        filename: "[contenthash].js",
-        path: join(path, "dist"),
-      },
-      plugins: [
-        {
-          apply: (compiler: Webpack.Compiler) => {
-            compiler.hooks.emit.tap("kiwi-bundle-api", compilation => {
-              const handlerPaths = Object.keys(handlers).reduce((result, handlerPath) => {
-                if(typeof result[handlers[handlerPath]] === "undefined") {
-                  result[handlers[handlerPath]] = []
-                }
-                result[handlers[handlerPath]].push(handlerPath)
-                return result
-              }, {} as any)
+  // Server
+  const api = new API()
 
-              const bundlesFile = JSON.stringify(Array.from(compilation.entrypoints.keys()).reduce((result, handlerName) => {
-                handlerPaths[handlerName].forEach((handlerPath: string) => {
-                  result[handlerPath] = compilation.entrypoints.get(handlerName).runtimeChunk.files[0]
-                }, {} as any)
-                return result
-              }, {} as any), null, 2)
-              compilation.assets["bundles.json"] = {
-                source: () => bundlesFile,
-                size: () => bundlesFile.length,
-              }
-
-              const serverFile = `require("kiwi-bundle-api").Server(require("./bundles.json"));`
-              compilation.assets["server.js"] = {
-                source: () => serverFile,
-                size: () => serverFile.length,
-              }
-            })
-          },
-        },
-      ]
-    }).watch({}, (error, stats) => {
-        console.log(error)
-    })
-    // CURRENT_API = new API(options.dev.webHost, options.dev.webPort, version, handlers)
-  }
+  // Webpack
+  console.log("Webpack is starting...\n")
+  const webpack = new WebpackCompiler(path, rootDir, handlers, outDir)
+  webpack.watch(() => {
+    if(!isWebpackStarted) {
+      console.log("[OK] Webpack is now waiting for updates\n")
+      isWebpackStarted = true
+    }
+    console.log("[OK] Build done\n")
+  }, (bundle) => {
+    api.setHandlers(bundle)
+    if(!isServerStarted) {
+      api.start(options.dev.webPort, options.dev.webHost, () => {
+        console.log(`[OK] API available on http://${options.dev.webHost}:${options.dev.webPort}...\n`)
+      })
+      isServerStarted = true
+    }
+  })
 }
