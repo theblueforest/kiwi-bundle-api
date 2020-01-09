@@ -1,5 +1,6 @@
 import Webpack from "webpack"
 import { Environment } from "dropin-recipes"
+import nodeExternals from "webpack-node-externals"
 import { join } from "path"
 
 export class WebpackCompiler {
@@ -15,7 +16,7 @@ export class WebpackCompiler {
     this.handlers = handlers
   }
 
-  private getPlugins(env: Environment, handleBundle?: (bundle: any) => void) {
+  private getPlugins(env: Environment, handleHandlers?: (bundle: any) => void) {
     const handlerPaths = Object.keys(this.handlers).reduce((result, handlerPath) => {
       if(typeof result[this.handlers[handlerPath]] === "undefined") {
         result[this.handlers[handlerPath]] = []
@@ -28,24 +29,24 @@ export class WebpackCompiler {
       {
         apply: (compiler: Webpack.Compiler) => {
           compiler.hooks.emit.tap("kiwi-bundle-api", compilation => {
-            const bundle = Array.from(compilation.entrypoints.keys()).reduce((result, handlerName) => {
+            const handlers = Array.from(compilation.entrypoints.keys()).reduce((result, handlerName) => {
               handlerPaths[handlerName].forEach((handlerPath: string) => {
                 result[handlerPath] = compilation.entrypoints.get(handlerName).runtimeChunk.files[0]
               }, {} as any)
               return result
             }, {} as any)
 
-            if(typeof handleBundle !== "undefined") {
-              handleBundle(bundle)
+            if(typeof handleHandlers !== "undefined") {
+              handleHandlers(handlers)
             }
 
             if(env === Environment.PRODUCTION) {
-              const bundleFile = JSON.stringify(bundle, null, 2)
+              const bundleFile = JSON.stringify(handlers, null, 2)
               compilation.assets["bundle.json"] = {
                 source: () => bundleFile,
                 size: () => bundleFile.length,
               }
-              const serverFile = `require("kiwi-bundle-api").KiwiBundleAPI(require("./bundle.json"));`
+              const serverFile = `require("kiwi-bundle-api").KiwiBundleAPI(__dirname, require("./bundle.json"));`
               compilation.assets["server.js"] = {
                 source: () => serverFile,
                 size: () => serverFile.length,
@@ -58,7 +59,7 @@ export class WebpackCompiler {
     ]
   }
 
-  private getOptions(env: Environment, handleBundle?: (bundle: any) => void): Webpack.Configuration {
+  private getOptions(env: Environment, handleHandlers?: (bundle: any) => void): Webpack.Configuration {
     return {
       mode: env === Environment.PRODUCTION ? "production" : "development",
       entry: Object.values(this.handlers).reduce((result, handler) => {
@@ -70,27 +71,50 @@ export class WebpackCompiler {
       },
       module: {
         rules: [
-          { test: /\.tsx?$/, use: "ts-loader", exclude: /node_modules/ },
+          {
+            test: /\.tsx?$/,
+            use: "ts-loader",
+            include: join(this.path, this.rootDir),
+          },
         ],
       },
       target: "node",
+      externals: [ nodeExternals() ],
       output: {
         filename: "[contenthash].js",
         path: join(this.path, this.outDir),
+        libraryTarget: "umd",
       },
-      plugins: this.getPlugins(env, handleBundle),
+      plugins: this.getPlugins(env, handleHandlers),
     }
   }
 
-  watch(onBuild: () => void, handleBundle: (bundle: any) => void) {
-    Webpack(this.getOptions(Environment.DEVELOPMENT, handleBundle)).watch({}, (error, stats) => {
-      onBuild()
+  watch(onBuild: () => void, handleHandlers: (bundle: any) => void) {
+    Webpack(this.getOptions(Environment.DEVELOPMENT, handleHandlers)).watch({}, (error, stats) => {
+      if(error !== null) {
+        console.error("[ERROR]", error, "\n")
+        process.exit(1)
+      } else if(stats.hasErrors()) {
+        stats.compilation.errors.forEach(error => {
+          console.error("[ERROR]", error, "\n")
+        })
+        process.exit(1)
+      } else {
+        onBuild()
+      }
     })
   }
 
   build(callback?: () => void) {
     Webpack(this.getOptions(Environment.PRODUCTION)).run((error, stats) => {
-      if(typeof callback !== "undefined") {
+      if(error !== null) {
+        console.error("[ERROR]", error, "\n")
+      } else if(stats.hasErrors()) {
+        stats.compilation.errors.forEach(error => {
+          console.error(error.message, "\n")
+        })
+        process.exit(1)
+      } else if(typeof callback !== "undefined") {
         callback()
       }
     })

@@ -23,9 +23,11 @@
   "dependencies": {
     "@types/webpack": "^4.41.2",
     "ts-loader": "^6.2.1",
-    "webpack": "^4.41.5"
+    "webpack": "^4.41.5",
+    "webpack-node-externals": "^1.7.2"
   },
   "devDependencies": {
+    "@types/webpack-node-externals": "^1.7.0",
     "kiwi-bundle": "3.0.7"
   }
 }

@@ -1,4 +1,6 @@
 import http from "http"
+import { join } from "path"
+import { HandlerAction } from "./Handler"
 
 export type APIHandlers = {
   [path: string]: {
@@ -8,7 +10,12 @@ export type APIHandlers = {
 }
 
 export class API {
+  private path: string
   private handlers: APIHandlers = {}
+
+  constructor(path: string) {
+    this.path = path
+  }
 
   setHandlers(handlers: { [path: string]: string }) {
     this.handlers = Object.keys(handlers).reduce((result, handlerPath) => {
@@ -44,11 +51,17 @@ export class API {
     if(output === null) {
       response.writeHead(404, { "Content-Type": "text/plain" })
       response.write("404 Not found")
+      response.end()
     } else {
       response.writeHead(200, { "Content-Type": "application/json" })
-      response.write(JSON.stringify(output))
+      const handlerFunction: HandlerAction = require(join(this.path, output.path)).default
+      handlerFunction({
+        method: request.method || "",
+      }).then(output => {
+        response.write(JSON.stringify(output))
+        response.end()
+      })
     }
-    response.end()
   }
 
   start(port = 8080, hostname = "0.0.0.0", callback?: () => void) {

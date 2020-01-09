@@ -8,7 +8,7 @@ export const main: KiwiBundleStartHandler = ({ path, rootDir, handlers, outDir, 
   let isServerStarted = false
 
   // Server
-  const api = new API()
+  const api = new API(join(path, outDir))
 
   // Webpack
   console.log("Webpack is starting...\n")
@@ -19,8 +19,8 @@ export const main: KiwiBundleStartHandler = ({ path, rootDir, handlers, outDir, 
       isWebpackStarted = true
     }
     console.log("[OK] Build done\n")
-  }, (bundle) => {
-    api.setHandlers(bundle)
+  }, handlers => {
+    api.setHandlers(handlers)
     if(!isServerStarted) {
       api.start(options.dev.webPort, options.dev.webHost, () => {
         console.log(`[OK] API available on http://${options.dev.webHost}:${options.dev.webPort}...\n`)
@@ -28,4 +28,5 @@ export const main: KiwiBundleStartHandler = ({ path, rootDir, handlers, outDir, 
       isServerStarted = true
     }
   })
+
 }
