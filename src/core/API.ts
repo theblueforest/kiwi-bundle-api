@@ -77,6 +77,11 @@ export class API {
                 output.then(body => {
                   context.body = body
                   resolve()
+                }).catch(error => {
+                  console.error("[ERROR]", error)
+                  context.code = 500
+                  context.body = "500 - Server error"
+                  resolve()
                 })
               }
             }

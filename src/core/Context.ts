@@ -1,31 +1,29 @@
 import http from "http"
-import { parse, UrlWithParsedQuery } from "url"
+import { Readable } from "stream"
+import { parse } from "url"
 
 export type ContextMethod = "GET"|"HEAD"|"POST"|"PUT"|"DELETE"|"CONNECT"|"OPTIONS"|"TRACE"|"PATCH"
 
-export interface ContextOptions<Params = any> {
-  method: string
-  headers: any
-  params: Params
-  body: any
-}
+type ContextAddListener = (event: string | symbol, listener: (...args: any[]) => void) => Readable
 
 export class Context<Params = {}, Body = {}> {
   code: number = 200
-  url: string
-  method: ContextMethod
-  headers: any = {}
-  query: any = {}
+  readonly url: string
+  readonly method: ContextMethod
+  readonly headers: any = {}
+  readonly query: any = {}
+  private addListener: ContextAddListener
   path?: string
   params?: Params
   body?: Body
 
   constructor(request: http.IncomingMessage) {
     const url = parse(request.url as string, true)
-    this.url = url.pathname || ""
+    this.url = url.pathname || "/"
     this.method = request.method as ContextMethod
     this.headers = request.headers
     this.query = Object.assign({}, url.query)
+    this.addListener = request.on.bind(request)
   }
 
   private parseBody(contentType: string, body: string) {
@@ -58,8 +56,21 @@ export class Context<Params = {}, Body = {}> {
     return body
   }
 
-  readBody() {
-    this.body = this.parseBody(this.headers["content-type"], "")
+  readData(): Promise<string> {
+    return new Promise(resolve => {
+      let body = ""
+      if(typeof this.addListener === "undefined") {
+        resolve(body)
+      } else {
+        this.addListener("data", chunk => {
+          body += chunk.toString()
+        })
+        this.addListener("end", () => {
+          delete this.addListener
+          resolve(this.parseBody(this.headers["content-type"], body))
+        })
+      }
+    })
   }
 
 }
