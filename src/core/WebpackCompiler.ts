@@ -90,15 +90,15 @@ export class WebpackCompiler {
   }
 
   watch(onBuild: () => void, handleHandlers: (bundle: any) => void) {
+    // TODO : delete old j.js files
     Webpack(this.getOptions(Environment.DEVELOPMENT, handleHandlers)).watch({}, (error, stats) => {
       if(error !== null) {
         console.error("[ERROR]", error, "\n")
         process.exit(1)
       } else if(stats.hasErrors()) {
         stats.compilation.errors.forEach(error => {
-          console.error("[ERROR]", error, "\n")
+          console.error(error.message, "\n")
         })
-        process.exit(1)
       } else {
         onBuild()
       }

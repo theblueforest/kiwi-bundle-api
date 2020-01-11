@@ -1,11 +1,11 @@
+import { Context, ContextMethod } from "./Context"
 
-export interface HandlerContext {
-  method: string
-  headers: any
-  params: any
-  body: any
+export type HandlerConfig<Params = any, Body = any> = (context: Context<Params>) => {
+  [method in ContextMethod]?: Promise<Body | void>
 }
 
-export type HandlerAction = (context: HandlerContext) => Promise<any>
-
-export const Handler = (action: HandlerAction) => action
+export const Handler = <Params = {}, Body = {}>(config: HandlerConfig<Params, Body>) => {
+  return (context: Context<Params, Body>) => {
+    return config(context)[context.method]
+  }
+}
