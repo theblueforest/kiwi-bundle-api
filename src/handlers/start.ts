@@ -1,9 +1,9 @@
 import { join } from "path"
-import { KiwiBundleStartHandler } from "./.bundles/kiwi-bundle/handlers"
+import { KiwiBundleStartHandler } from "../.bundles/kiwi-bundle/handlers"
 import { WebpackCompiler } from "../core/WebpackCompiler"
 import { API } from "../core/API"
 
-export const main: KiwiBundleStartHandler = ({ path, rootDir, handlers, outDir, options }) => {
+export const main: KiwiBundleStartHandler = ({ path, rootDir, handlers, outDir, options, packageJson }) => {
   let isWebpackStarted = false
   let isServerStarted = false
 
@@ -12,7 +12,7 @@ export const main: KiwiBundleStartHandler = ({ path, rootDir, handlers, outDir, 
 
   // Webpack
   console.log("Webpack is starting...\n")
-  const webpack = new WebpackCompiler(path, rootDir, handlers, outDir)
+  const webpack = new WebpackCompiler(path, rootDir, handlers, outDir, packageJson)
   webpack.watch(() => {
     if(!isWebpackStarted) {
       console.log("[OK] Webpack is now waiting for updates\n")

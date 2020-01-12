@@ -10,12 +10,14 @@ export class WebpackCompiler {
   private outDir: string
   private handlers: { [path: string]: string }
   private cache: { [path: string]: string } = {}
+  packageJson: any
 
-  constructor(path: string, rootDir: string, handlers: { [path: string]: string }, outDir: string) {
+  constructor(path: string, rootDir: string, handlers: { [path: string]: string }, outDir: string, packageJson: any) {
     this.path = path
     this.rootDir = rootDir
     this.outDir = outDir
     this.handlers = handlers
+    this.packageJson = packageJson
   }
 
   private getPlugins(env: Environment, handleHandlers?: (bundle: any) => void) {
@@ -31,9 +33,18 @@ export class WebpackCompiler {
       {
         apply: (compiler: Webpack.Compiler) => {
           compiler.hooks.emit.tap("kiwi-bundle-api", compilation => {
+            let cache: any = { dependencies: {} }
+
             const handlers = Array.from(compilation.entrypoints.keys()).reduce((result, handlerName) => {
               handlerPaths[handlerName].forEach((handlerPath: string) => {
-                result[handlerPath] = compilation.entrypoints.get(handlerName).runtimeChunk.files[0]
+                const runtimeChunk = compilation.entrypoints.get(handlerName).runtimeChunk
+                result[handlerPath] = runtimeChunk.files[0]
+                cache.dependencies[result[handlerPath]] = Array.from(runtimeChunk._modules).reduce((modules: string[], currentModule: any) => {
+                  if(currentModule.type === "javascript/dynamic") {
+                    modules.push(currentModule.request)
+                  }
+                  return modules
+                }, [])
               }, {} as any)
               return result
             }, {} as any)
@@ -43,6 +54,7 @@ export class WebpackCompiler {
             }
 
             if(env === Environment.PRODUCTION) {
+
               const bundleFile = JSON.stringify(handlers, null, 2)
               compilation.assets["bundle.json"] = {
                 source: () => bundleFile,
@@ -54,6 +66,37 @@ export class WebpackCompiler {
                 source: () => serverFile,
                 size: () => serverFile.length,
               }
+
+              const packagesToInclude = Object.values(cache.dependencies).reduce((result: string[], dependencies) => {
+                (dependencies as string[]).forEach(dependency => {
+                  if(result.indexOf(dependency) === -1) {
+                    result.push(dependency)
+                  }
+                })
+                return result
+              }, [] as any)
+              const packageFile = JSON.stringify({
+                name: this.packageJson.name,
+                version: this.packageJson.version,
+                scripts: { start: "node server.js" },
+                dependencies: Object.keys(this.packageJson.dependencies || {}).reduce((result: any, packageName) => {
+                  if(packagesToInclude.indexOf(packageName) !== -1) {
+                    result[packageName] = this.packageJson.dependencies[packageName]
+                  }
+                  return result
+                }, {}),
+              }, null, 2)
+              compilation.assets["package.json"] = {
+                source: () => packageFile,
+                size: () => packageFile.length,
+              }
+
+              const cacheFile = JSON.stringify(cache)
+              compilation.assets["cache.json"] = {
+                source: () => cacheFile,
+                size: () => cacheFile.length,
+              }
+
             } else if(env === Environment.DEVELOPMENT) {
               const cacheHandlers: string[] = Object.values(handlers)
               Object.values(this.cache).forEach(handlerName => {
@@ -88,14 +131,16 @@ export class WebpackCompiler {
           },
         ],
       },
+      plugins: this.getPlugins(env, handleHandlers),
       target: "node",
-      externals: [ nodeExternals() ],
+      externals: [
+        nodeExternals({ modulesFromFile: true }),
+      ],
       output: {
         filename: "[contenthash].js",
         path: join(this.path, this.outDir),
         libraryTarget: "umd",
       },
-      plugins: this.getPlugins(env, handleHandlers),
     }
   }
 

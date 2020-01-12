@@ -7,6 +7,7 @@ interface KiwiBundleHandlerParams {
   version: string
   options: KiwiBundleOptions
   handlers: { [path: string]: string }
+  packageJson: any
 }
 
 export type KiwiBundleStartHandler = (params: KiwiBundleHandlerParams) => void
