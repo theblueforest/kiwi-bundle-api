@@ -2,12 +2,14 @@ import Webpack from "webpack"
 import { Environment } from "dropin-recipes"
 import nodeExternals from "webpack-node-externals"
 import { join } from "path"
+import fs from "fs"
 
 export class WebpackCompiler {
   private path: string
   private rootDir: string
   private outDir: string
   private handlers: { [path: string]: string }
+  private cache: { [path: string]: string } = {}
 
   constructor(path: string, rootDir: string, handlers: { [path: string]: string }, outDir: string) {
     this.path = path
@@ -46,12 +48,20 @@ export class WebpackCompiler {
                 source: () => bundleFile,
                 size: () => bundleFile.length,
               }
+
               const serverFile = `require("kiwi-bundle-api").KiwiBundleAPI(__dirname, require("./bundle.json"));`
               compilation.assets["server.js"] = {
                 source: () => serverFile,
                 size: () => serverFile.length,
               }
-
+            } else if(env === Environment.DEVELOPMENT) {
+              const cacheHandlers: string[] = Object.values(handlers)
+              Object.values(this.cache).forEach(handlerName => {
+                if(cacheHandlers.indexOf(handlerName) === -1) {
+                  fs.unlinkSync(join(this.path, this.outDir, handlerName))
+                }
+              })
+              this.cache = handlers
             }
           })
         },
@@ -90,7 +100,6 @@ export class WebpackCompiler {
   }
 
   watch(onBuild: () => void, handleHandlers: (bundle: any) => void) {
-    // TODO : delete old j.js files
     Webpack(this.getOptions(Environment.DEVELOPMENT, handleHandlers)).watch({}, (error, stats) => {
       if(error !== null) {
         console.error("[ERROR]", error, "\n")
@@ -109,6 +118,7 @@ export class WebpackCompiler {
     Webpack(this.getOptions(Environment.PRODUCTION)).run((error, stats) => {
       if(error !== null) {
         console.error("[ERROR]", error, "\n")
+        process.exit(1)
       } else if(stats.hasErrors()) {
         stats.compilation.errors.forEach(error => {
           console.error(error.message, "\n")

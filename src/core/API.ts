@@ -19,7 +19,9 @@ export class API {
 
   setHandlers(handlers: { [path: string]: string }) {
     this.handlers = Object.keys(handlers).reduce((result, handlerPath) => {
-      result[`^${handlerPath.replace(/\{.*?\}/g, "([A-Za-z0-9]+)")}$`] = {
+      let regexPath = handlerPath.replace(/\{.*?\}/g, "([A-Za-z0-9]+)")
+      if(regexPath.charAt(regexPath.length - 1) === "/") regexPath += "?"
+      result["^" + regexPath + "$"] = {
         path: handlers[handlerPath],
         params: handlerPath.match(/\{.*?\}/g)?.map(c => c.slice(1, -1)) || [],
       }
