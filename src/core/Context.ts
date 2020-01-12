@@ -66,11 +66,22 @@ export class Context<Params = {}, Body = {}> {
           body += chunk.toString()
         })
         this.addListener("end", () => {
-          delete this.addListener
           resolve(this.parseBody(this.headers["content-type"], body))
         })
       }
     })
+  }
+
+  toJSON() {
+    return {
+      code: this.code,
+      url: this.url,
+      method: this.method,
+      headers: this.headers,
+      query: this.query,
+      path: this.path,
+      params: this.params,
+    }
   }
 
 }

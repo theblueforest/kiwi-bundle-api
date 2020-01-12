@@ -23,7 +23,7 @@ export const main: KiwiBundleStartHandler = ({ path, rootDir, handlers, outDir, 
     api.setHandlers(handlers)
     if(!isServerStarted) {
       api.start(options.dev.webPort, options.dev.webHost, () => {
-        console.log(`[OK] API available on http://${options.dev.webHost}:${options.dev.webPort}...\n`)
+        console.log(`[OK] API available on http://${options.dev.webHost}:${options.dev.webPort}/...\n`)
       })
       isServerStarted = true
     }

@@ -40,7 +40,9 @@ export class API {
 
   private requestListener(request: http.IncomingMessage, response: http.ServerResponse) {
     const start = Date.now()
+
     const context = new Context(request)
+    console.log(`[${this.getDateString()}] ==> Incoming request from ${context.url}\n`)
 
     const paths = Object.keys(this.handlers)
     for(let i = 0; i < paths.length; i++) {
@@ -62,12 +64,15 @@ export class API {
       } else {
         import(join(this.path, context.path))
           .catch(() => {
-            console.log(`[${this.getDateString()}]     \\> Handler "${context.path}" not found`)
+            console.log(`/!\\ Handler "${context.path}" not found\n`)
             resolve()
           })
           .then(handler => {
             if(typeof handler.default === "undefined") {
-              console.log(`[${this.getDateString()}]     \\> No default export on handler "${context.path}"`)
+              console.log(`/!\\ No default export on handler "${context.path}"\n`)
+              resolve()
+            } else if(typeof handler.default !== "function") {
+              console.log(`/!\\ Default export on handler "${context.path}" is not a function\n`)
               resolve()
             } else {
               const output: Promise<Context> = handler.default(context)
@@ -92,18 +97,28 @@ export class API {
         context.code = 404
         context.body = "404 - Not found"
       }
+
       const isString = typeof context.body === "string"
+
       response.writeHead(context.code, {
         "Content-Type": isString ? "text/plain" : "application/json",
       })
-      response.write(isString ? context.body : JSON.stringify(context.body))
+
+      response.write(isString ? context.body : JSON.stringify(context.body, (key, value) => {
+        if(typeof value === "function") return
+        if(typeof value === "object" && value !== null && value.constructor.name !== "Object") {
+          if(typeof value.toJSON === "function") return value.toJSON()
+          return
+        }
+        return value // Types : bigint, boolean, number, object, string, symbol, undefined
+      }))
+
       response.end()
-      console.log(`[${this.getDateString()}] URL  : ${request.url}`)
-      console.log(`                         Code : ${context.code}`)
-      if(typeof context.path !== "undefined") {
-        console.log(`                         Path : ${context.path}`)
-      }
-      console.log(`                         Time : ${Date.now() - start}ms`)
+
+      console.log(`[${this.getDateString()}] <== Outgoing response for ${context.url}`)
+      if(typeof context.path !== "undefined") console.log(`Path : ${context.path}`)
+      console.log(`Code : ${context.code}`)
+      console.log(`Time : ${Date.now() - start}ms\n`)
     })
   }
 
