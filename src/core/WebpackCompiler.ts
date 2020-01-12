@@ -55,13 +55,7 @@ export class WebpackCompiler {
 
             if(env === Environment.PRODUCTION) {
 
-              const bundleFile = JSON.stringify(handlers, null, 2)
-              compilation.assets["bundle.json"] = {
-                source: () => bundleFile,
-                size: () => bundleFile.length,
-              }
-
-              const serverFile = `require("kiwi-bundle-api").KiwiBundleAPI(__dirname, require("./bundle.json"));`
+              const serverFile = `require("kiwi-bundle-api").KiwiBundleAPI(__dirname, ${JSON.stringify(handlers)});`
               compilation.assets["server.js"] = {
                 source: () => serverFile,
                 size: () => serverFile.length,
@@ -78,23 +72,19 @@ export class WebpackCompiler {
               const packageFile = JSON.stringify({
                 name: this.packageJson.name,
                 version: this.packageJson.version,
+                main: "server.js",
                 scripts: { start: "node server.js" },
+                bundles: { "kiwi-bundle": { cache }, },
                 dependencies: Object.keys(this.packageJson.dependencies || {}).reduce((result: any, packageName) => {
                   if(packagesToInclude.indexOf(packageName) !== -1) {
                     result[packageName] = this.packageJson.dependencies[packageName]
                   }
                   return result
                 }, {}),
-              }, null, 2)
+              })
               compilation.assets["package.json"] = {
                 source: () => packageFile,
                 size: () => packageFile.length,
-              }
-
-              const cacheFile = JSON.stringify(cache)
-              compilation.assets["cache.json"] = {
-                source: () => cacheFile,
-                size: () => cacheFile.length,
               }
 
             } else if(env === Environment.DEVELOPMENT) {
