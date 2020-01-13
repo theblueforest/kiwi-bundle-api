@@ -11,19 +11,20 @@ export const main: KiwiBundleStartHandler = ({ path, rootDir, handlers, outDir, 
   const api = new API(join(path, outDir))
 
   // Webpack
-  console.log("Webpack is starting...\n")
+  console.log("Webpack is starting...")
   const webpack = new WebpackCompiler(path, rootDir, handlers, outDir, packageJson)
   webpack.watch(() => {
-    if(!isWebpackStarted) {
-      console.log("[OK] Webpack is now waiting for updates\n")
+    if(isWebpackStarted) {
+    } else {
+      console.log("\n[OK] Webpack is now waiting for updates")
       isWebpackStarted = true
     }
-    console.log("[OK] Build done\n")
+    console.log("\n[OK] Build done")
   }, handlers => {
     api.setHandlers(handlers)
     if(!isServerStarted) {
       api.start(options.dev.webPort, options.dev.webHost, () => {
-        console.log(`[OK] API available on http://${options.dev.webHost}:${options.dev.webPort}/...\n`)
+        console.log(`\n[OK] API available on http://${options.dev.webHost}:${options.dev.webPort}/`)
       })
       isServerStarted = true
     }

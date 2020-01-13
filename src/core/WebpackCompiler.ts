@@ -10,6 +10,7 @@ export class WebpackCompiler {
   private outDir: string
   private handlers: { [path: string]: string }
   private cache: { [path: string]: string } = {}
+  // private migrations: { [old: string]: string } = {}
   packageJson: any
 
   constructor(path: string, rootDir: string, handlers: { [path: string]: string }, outDir: string, packageJson: any) {
@@ -89,9 +90,10 @@ export class WebpackCompiler {
 
             } else if(env === Environment.DEVELOPMENT) {
               const cacheHandlers: string[] = Object.values(handlers)
-              Object.values(this.cache).forEach(handlerName => {
+              Object.values(this.cache).forEach((handlerName, index) => {
                 if(cacheHandlers.indexOf(handlerName) === -1) {
                   fs.unlinkSync(join(this.path, this.outDir, handlerName))
+                  // this.migrations[handlerName] = cacheHandlers[index]
                 }
               })
               this.cache = handlers
@@ -137,14 +139,16 @@ export class WebpackCompiler {
   watch(onBuild: () => void, handleHandlers: (bundle: any) => void) {
     Webpack(this.getOptions(Environment.DEVELOPMENT, handleHandlers)).watch({}, (error, stats) => {
       if(error !== null) {
-        console.error("[ERROR]", error, "\n")
+        console.error("\n[ERROR]", error)
         process.exit(1)
       } else if(stats.hasErrors()) {
         stats.compilation.errors.forEach(error => {
-          console.error(error.message, "\n")
+          console.error("\n", error.message)
         })
       } else {
         onBuild()
+        // onBuild(this.migrations)
+        // this.migrations = {}
       }
     })
   }
@@ -152,11 +156,11 @@ export class WebpackCompiler {
   build(callback?: () => void) {
     Webpack(this.getOptions(Environment.PRODUCTION)).run((error, stats) => {
       if(error !== null) {
-        console.error("[ERROR]", error, "\n")
+        console.error("\n[ERROR]", error)
         process.exit(1)
       } else if(stats.hasErrors()) {
         stats.compilation.errors.forEach(error => {
-          console.error(error.message, "\n")
+          console.error("\n", error.message)
         })
         process.exit(1)
       } else if(typeof callback !== "undefined") {
@@ -164,5 +168,4 @@ export class WebpackCompiler {
       }
     })
   }
-
 }

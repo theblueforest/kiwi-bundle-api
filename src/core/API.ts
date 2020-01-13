@@ -1,5 +1,6 @@
 import http from "http"
 import { join } from "path"
+import * as vm from "vm"
 import { Context } from "./Context"
 
 export type APIHandlers = {
@@ -20,7 +21,7 @@ export class API {
   setHandlers(handlers: { [path: string]: string }) {
     this.handlers = Object.keys(handlers).reduce((result, handlerPath) => {
       let regexPath = handlerPath.replace(/\{.*?\}/g, "([A-Za-z0-9]+)")
-      if(regexPath.charAt(regexPath.length - 1) === "/") regexPath += "?"
+      regexPath += regexPath.charAt(regexPath.length - 1) === "/" ? "?" : "/?"
       result["^" + regexPath + "$"] = {
         path: handlers[handlerPath],
         params: handlerPath.match(/\{.*?\}/g)?.map(c => c.slice(1, -1)) || [],
@@ -44,7 +45,7 @@ export class API {
     const start = Date.now()
 
     const context = new Context(request)
-    console.log(`[${this.getDateString()}] ==> Incoming request from ${context.url}\n`)
+    console.log(`\n[${this.getDateString()}] ==> Incoming request from ${context.url}`)
 
     const paths = Object.keys(this.handlers)
     for(let i = 0; i < paths.length; i++) {
@@ -66,18 +67,19 @@ export class API {
       } else {
         import(join(this.path, context.path))
           .catch(() => {
-            console.log(`/!\\ Handler "${context.path}" not found\n`)
+            console.log(`\n/!\\ Handler "${context.path}" not found`)
             resolve()
           })
           .then(handler => {
             if(typeof handler.default === "undefined") {
-              console.log(`/!\\ No default export on handler "${context.path}"\n`)
+              console.log(`\n/!\\ No default export on handler "${context.path}"`)
               resolve()
             } else if(typeof handler.default !== "function") {
-              console.log(`/!\\ Default export on handler "${context.path}" is not a function\n`)
+              console.log(`\n/!\\ Default export on handler "${context.path}" is not a function`)
               resolve()
             } else {
-              const output: Promise<Context> = handler.default(context)
+              const sandbox = vm.createContext({ handler, context })
+              const output: Promise<Context> = vm.runInContext(`handler.default(context)`, sandbox)
               if(typeof output === "undefined") {
                 resolve()
               } else {
@@ -85,7 +87,7 @@ export class API {
                   context.body = body
                   resolve()
                 }).catch(error => {
-                  console.error("[ERROR]", error)
+                  console.error("\n[ERROR]", error)
                   context.code = 500
                   context.body = "500 - Server error"
                   resolve()
@@ -102,9 +104,9 @@ export class API {
 
       const isString = typeof context.body === "string"
 
-      response.writeHead(context.code, {
+      response.writeHead(context.code, Object.assign({
         "Content-Type": isString ? "text/plain" : "application/json",
-      })
+      }, context.responseHeaders))
 
       response.write(isString ? context.body : JSON.stringify(context.body, (key, value) => {
         if(typeof value === "function") return
@@ -117,17 +119,17 @@ export class API {
 
       response.end()
 
-      console.log(`[${this.getDateString()}] <== Outgoing response for ${context.url}`)
+      console.log(`\n[${this.getDateString()}] <== Outgoing response for ${context.url}`)
       if(typeof context.path !== "undefined") console.log(`Path : ${context.path}`)
       console.log(`Code : ${context.code}`)
-      console.log(`Time : ${Date.now() - start}ms\n`)
+      console.log(`Time : ${Date.now() - start}ms`)
     })
   }
 
   start(port = 8080, hostname = "0.0.0.0", callback?: () => void) {
     http.createServer(this.requestListener.bind(this)).listen(port, hostname, () => {
       if(typeof callback === "undefined") {
-        console.log(`Server available on http://${hostname}:${port}/\n`)
+        console.log(`\nServer available on http://${hostname}:${port}/`)
       } else {
         callback()
       }

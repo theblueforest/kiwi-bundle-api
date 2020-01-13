@@ -13,6 +13,7 @@ export class Context<Params = {}, Body = {}> {
   readonly headers: any = {}
   readonly query: any = {}
   private addListener: ContextAddListener
+  responseHeaders: any = {}
   path?: string
   params?: Params
   body?: Body
