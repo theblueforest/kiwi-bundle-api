@@ -1,6 +1,6 @@
 {
   "name": "kiwi-bundle-api",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Nazim Lachter <nazim@blueforest.cc>",
   "repository": "git@github.com:theblueforest/kiwi-bundle-api.git",
   "license": "Apache-2.0",
@@ -28,6 +28,6 @@
   "devDependencies": {
     "@types/webpack": "^4.41.2",
     "@types/webpack-node-externals": "^1.7.0",
-    "kiwi-bundle": "3.0.7"
+    "kiwi-bundle": "3.1.0"
   }
 }
