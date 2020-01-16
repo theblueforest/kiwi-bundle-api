@@ -1,7 +1,7 @@
 import { join } from "path"
 import { KiwiBundleStartHandler } from "../.bundles/kiwi-bundle/handlers"
 import { WebpackCompiler } from "../core/WebpackCompiler"
-import { API } from "../core/API"
+import { API } from "kiwi-bundle-api-runtime"
 
 export const main: KiwiBundleStartHandler = ({ path, rootDir, handlers, outDir, options, packageJson }) => {
   let isWebpackStarted = false

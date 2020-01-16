@@ -2,7 +2,7 @@
   "extends": "./node_modules/kiwi-bundle/.models/ts/commonjs.json",
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "lib",
+    "outDir": "dist",
     "declaration": true
   },
   "include": [

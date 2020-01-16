@@ -1,3 +1,4 @@
+
 # Kiwi Bundle - API
 
 ## Getting Started
@@ -14,9 +15,12 @@
     "deploy": "kiwi deploy",
     "undeploy": "kiwi undeploy"
   },
+  "dependencies": {
+    "kiwi-bundle-api-runtime": "1.0.0"
+  },
   "devDependencies": {
-    "kiwi-bundle": "^3.0.1",
-    "kiwi-bundle-api": "^1.0.0"
+    "kiwi-bundle": "3.1.0",
+    "kiwi-bundle-api": "1.1.0"
   }
 }
 ```
