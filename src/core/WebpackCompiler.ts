@@ -55,13 +55,11 @@ export class WebpackCompiler {
             }
 
             if(env === Environment.PRODUCTION) {
-
-              const serverFile = `require("kiwi-bundle-api").KiwiBundleAPI(__dirname, ${JSON.stringify(handlers)});`
+              const serverFile = `require("kiwi-bundle-api-runtime").KiwiBundleAPI(__dirname, ${JSON.stringify(handlers)});`
               compilation.assets["server.js"] = {
                 source: () => serverFile,
                 size: () => serverFile.length,
               }
-
               const packagesToInclude = Object.values(cache.dependencies).reduce((result: string[], dependencies) => {
                 (dependencies as string[]).forEach(dependency => {
                   if(result.indexOf(dependency) === -1) {
@@ -87,7 +85,6 @@ export class WebpackCompiler {
                 source: () => packageFile,
                 size: () => packageFile.length,
               }
-
             } else if(env === Environment.DEVELOPMENT) {
               const cacheHandlers: string[] = Object.values(handlers)
               Object.values(this.cache).forEach((handlerName, index) => {
