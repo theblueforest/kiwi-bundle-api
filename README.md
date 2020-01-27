@@ -1,4 +1,3 @@
-
 # Kiwi Bundle - API
 
 ## Getting Started
@@ -55,7 +54,7 @@
 }
 ```
 
-**./src/handlers/root.json** (example)
+**./src/handlers/root.ts** (example)
 ```typescript
 import { Handler } from "kiwi-bundle-api-runtime"
 export default Handler(context => ({
