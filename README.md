@@ -1,4 +1,5 @@
-# Kiwi Bundle - API
+
+![Image of Yaktocat](./assets/cover.png)
 
 ## Getting Started
 
