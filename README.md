@@ -1,5 +1,5 @@
 
-![Image of Yaktocat](./assets/cover.png)
+![Kiwi Bundle API](./assets/cover.png)
 
 ## Getting Started
 
