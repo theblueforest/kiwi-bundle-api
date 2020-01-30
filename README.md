@@ -1,4 +1,3 @@
-
 # Kiwi Bundle - API
 
 ## Getting Started
@@ -11,9 +10,20 @@
   "scripts": {
     "start": "kiwi start",
     "test": "kiwi test",
-    "build": "kiwi build",
-    "deploy": "kiwi deploy",
-    "undeploy": "kiwi undeploy"
+    "build": "kiwi build"
+  },
+  "bundles": {
+    "kiwi-bundle": {
+      "options": {
+        "dev": {
+          "webHost": "0.0.0.0",
+          "webPort": 8040
+        }
+      },
+      "handlers": {
+        "/": "./handlers/root"
+      }
+    }
   },
   "dependencies": {
     "kiwi-bundle-api-runtime": "1.0.0"
@@ -42,6 +52,14 @@
     "src/**/*.test.tsx"
   ]
 }
+```
+
+**./src/handlers/root.ts** (example)
+```typescript
+import { Handler } from "kiwi-bundle-api-runtime"
+export default Handler(context => ({
+  GET: Promise.resolve("Hello :)")
+}))
 ```
 
 **./.gitignore** (recommended)
