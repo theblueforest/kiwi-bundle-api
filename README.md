@@ -1,4 +1,5 @@
-# Kiwi Bundle - API
+
+![Kiwi Bundle API](./assets/cover.png)
 
 ## Getting Started
 
