@@ -18,6 +18,7 @@
     }
   },
   "dependencies": {
+    "dotenv": "^8.2.0",
     "kiwi-bundle-api-runtime": "1.0.0",
     "ts-loader": "^6.2.1",
     "webpack": "^4.41.5",

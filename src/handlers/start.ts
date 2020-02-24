@@ -1,4 +1,5 @@
 import { join } from "path"
+import dotenv from "dotenv"
 import { KiwiBundleStartHandler } from "../.bundles/kiwi-bundle/handlers"
 import { WebpackCompiler } from "../core/WebpackCompiler"
 import { API } from "kiwi-bundle-api-runtime"
@@ -9,6 +10,9 @@ export const main: KiwiBundleStartHandler = ({ path, rootDir, handlers, outDir, 
 
   // Server
   const api = new API(join(path, outDir))
+
+  // Environment variables
+  dotenv.config()
 
   // Webpack
   console.log("Webpack is starting...")
